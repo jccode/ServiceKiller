@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">服务杀手</string>
+    <string name="action_add">添加</string>
+    <string name="action_kill">干掉</string>
+    <string name="action_settings">设置</string>
+    <string name="action_about">关于</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="title_activity_app_grid">选择应用</string>
+    
+    <string name="title_select_item">选择</string>
+    <plurals name="sub_title_select_item">
+        <item quantity="other">选中 %d 个</item>
+    </plurals>
+
+</resources>
