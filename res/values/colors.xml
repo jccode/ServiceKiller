@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="solid_cyan">#ff00ffff</color>
+    <color name="transparent_cyan">#5000ffff</color>
+</resources>
