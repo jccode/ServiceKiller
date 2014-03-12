@@ -3,21 +3,19 @@ package tk.jcchen.servicekiller.ui;
 import java.util.List;
 
 import tk.jcchen.servicekiller.R;
+import tk.jcchen.servicekiller.util.AppIconAsyncLoadUtils;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
@@ -34,6 +32,7 @@ import android.widget.TextView;
 
 public class AppGridActivity extends Activity {
 	
+	private final static String TAG = "ServiceKiller";
 	GridView appGrid;
 	private List<ResolveInfo> mApps;
 	private final int IMG_WIDTH = 80;
@@ -41,16 +40,17 @@ public class AppGridActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		mApps = loadApps();
 		
 		setContentView(R.layout.activity_app_grid);
 		// Show the Up button in the action bar.
 		setupActionBar();
 		
+		mApps = loadApps();
 		appGrid = (GridView) findViewById(R.id.grid_apps);
 		appGrid.setAdapter(new AppsAdapter(this));
 		appGrid.setChoiceMode(GridView.CHOICE_MODE_MULTIPLE_MODAL);
 		appGrid.setMultiChoiceModeListener(new MultiChoiceModeListener());
+		
 	}
 	
 	/**
@@ -97,9 +97,11 @@ public class AppGridActivity extends Activity {
 	public class AppsAdapter extends BaseAdapter {
 		
 		private LayoutInflater mLayoutInflater;
+		private AppIconAsyncLoadUtils mIconUtils;
 		
 		public AppsAdapter(Context context) {
 			mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			mIconUtils = new AppIconAsyncLoadUtils(getResources());
 		}
 
 		@Override
@@ -121,8 +123,9 @@ public class AppGridActivity extends Activity {
 		public View getView(int position, View convertView, ViewGroup parent) {
 			
 			ActivityInfo info = mApps.get(position).activityInfo;
-			Drawable img = info.loadIcon(getPackageManager());
-			CharSequence name = info.loadLabel(getPackageManager());
+			PackageManager pm = getPackageManager();
+//			Drawable img = info.loadIcon(pm);
+			CharSequence name = info.loadLabel(pm);
 			
 			CheckableView view;
 			if(convertView == null) {
@@ -130,7 +133,11 @@ public class AppGridActivity extends Activity {
 			} else {
 				view = (CheckableView) convertView;
 			}
-			view.setView(img, name);
+			
+//			view.setView(img, name);
+			view.setAppName(name);
+			mIconUtils.loadImageView(info, pm, view.getImageView());
+			
 			return view;
 		}
 		
@@ -154,9 +161,18 @@ public class AppGridActivity extends Activity {
 		}
 		
 		protected void setView(Drawable img, CharSequence name) {
-			((ImageView)mView.findViewById(R.id.app_img)).setImageDrawable(img);
+			getImageView().setImageDrawable(img);
+			setAppName(name);
+		}
+		
+		protected void setAppName(CharSequence name) {
 			((TextView)mView.findViewById(R.id.app_name)).setText(name);
 		}
+		
+		protected ImageView getImageView() {
+			return ((ImageView)mView.findViewById(R.id.app_img));
+		}
+		
 
 		@Override
 		public boolean isChecked() {
@@ -215,7 +231,7 @@ public class AppGridActivity extends Activity {
 			// Test: get package name
 			ResolveInfo info = mApps.get(position);
 			String pkgName = info.activityInfo.packageName;
-			Log.d("ServiceKiller", pkgName);
+			Log.d(TAG, pkgName);
 		}
 		
 	}
