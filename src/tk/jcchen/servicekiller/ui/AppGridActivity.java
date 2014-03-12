@@ -1,11 +1,13 @@
 package tk.jcchen.servicekiller.ui;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import tk.jcchen.servicekiller.R;
 import tk.jcchen.servicekiller.util.AppIconAsyncLoadUtils;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -13,10 +15,12 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.util.Log;
+import android.util.Pair;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -28,6 +32,7 @@ import android.widget.Checkable;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public class AppGridActivity extends Activity {
@@ -36,6 +41,7 @@ public class AppGridActivity extends Activity {
 	GridView appGrid;
 	private List<ResolveInfo> mApps;
 	private final int IMG_WIDTH = 80;
+	private List<IconEntity> mLabelIcons;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -45,13 +51,47 @@ public class AppGridActivity extends Activity {
 		// Show the Up button in the action bar.
 		setupActionBar();
 		
-		mApps = loadApps();
 		appGrid = (GridView) findViewById(R.id.grid_apps);
-		appGrid.setAdapter(new AppsAdapter(this));
+//		appGrid.setAdapter(new AppsAdapter(this));
 		appGrid.setChoiceMode(GridView.CHOICE_MODE_MULTIPLE_MODAL);
 		appGrid.setMultiChoiceModeListener(new MultiChoiceModeListener());
 		
+//		mApps = loadApps();
+//		mLabelIcons = initLableIcons(mApps);
+		
+		new AsyncTask<Void, Void, Pair<List<ResolveInfo>,List<IconEntity>>>() {
+
+			ProgressDialog dialog = new ProgressDialog(AppGridActivity.this);
+			
+			@Override
+			protected void onPreExecute() {
+				dialog.setMessage("Please wait...");
+	            	dialog.setIndeterminate(true);
+	            	dialog.show();
+			}
+
+			@Override
+			protected void onPostExecute(Pair<List<ResolveInfo>,List<IconEntity>> result) {
+				dialog.dismiss();
+				
+				mApps = result.first;
+				mLabelIcons = result.second;
+				
+				appGrid.setAdapter(new AppsAdapter(AppGridActivity.this));
+			}
+
+			@Override
+			protected Pair<List<ResolveInfo>,List<IconEntity>> doInBackground(Void... params) {
+				List<ResolveInfo> apps = loadApps();
+				List<IconEntity> labelIcons = initLableIcons(apps);
+				return new Pair(apps, labelIcons);
+			}
+			
+			
+		}.execute();
 	}
+
+
 	
 	/**
 	 * Set up the {@link android.app.ActionBar}, if the API is available.
@@ -93,6 +133,26 @@ public class AppGridActivity extends Activity {
 		return getPackageManager().queryIntentActivities(mainIntent, 0);
 	}
 	
+	private List<IconEntity> initLableIcons(List<ResolveInfo> apps) {
+		List<IconEntity> labelIcons = new ArrayList<IconEntity>(apps.size());
+		PackageManager pm = getPackageManager();
+		for(ResolveInfo info : apps) {
+			ActivityInfo i = info.activityInfo;
+			labelIcons.add(new IconEntity(i.loadLabel(pm).toString(), i.loadIcon(pm)));
+		}
+		return labelIcons;
+	}
+	
+	
+	static class IconEntity {
+		String name;
+		Drawable image;
+		public IconEntity(String name, Drawable image) {
+			super();
+			this.name = name;
+			this.image = image;
+		}
+	}
 	
 	public class AppsAdapter extends BaseAdapter {
 		
@@ -101,7 +161,7 @@ public class AppGridActivity extends Activity {
 		
 		public AppsAdapter(Context context) {
 			mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			mIconUtils = new AppIconAsyncLoadUtils(getResources());
+//			mIconUtils = new AppIconAsyncLoadUtils(getResources());
 		}
 
 		@Override
@@ -122,10 +182,10 @@ public class AppGridActivity extends Activity {
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			
-			ActivityInfo info = mApps.get(position).activityInfo;
-			PackageManager pm = getPackageManager();
-//			Drawable img = info.loadIcon(pm);
-			CharSequence name = info.loadLabel(pm);
+//			ActivityInfo info = mApps.get(position).activityInfo;
+//			PackageManager pm = getPackageManager();
+////			Drawable img = info.loadIcon(pm);
+//			CharSequence name = info.loadLabel(pm);
 			
 			CheckableView view;
 			if(convertView == null) {
@@ -135,8 +195,11 @@ public class AppGridActivity extends Activity {
 			}
 			
 //			view.setView(img, name);
-			view.setAppName(name);
-			mIconUtils.loadImageView(info, pm, view.getImageView());
+//			view.setAppName(name);
+//			mIconUtils.loadImageView(info, pm, view.getImageView());
+			
+			IconEntity lableIcon = mLabelIcons.get(position);
+			view.setView(lableIcon.image, lableIcon.name);
 			
 			return view;
 		}
