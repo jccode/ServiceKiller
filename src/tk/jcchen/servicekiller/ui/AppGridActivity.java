@@ -19,6 +19,7 @@ import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.util.Log;
 import android.util.Pair;
+import android.util.SparseBooleanArray;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -32,6 +33,7 @@ import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 public class AppGridActivity extends Activity {
 	
@@ -260,6 +262,19 @@ public class AppGridActivity extends Activity {
 		
 		@Override
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
+			
+			Toast.makeText(getBaseContext(), "Action Item clicked!", Toast.LENGTH_SHORT);
+			
+			List<String> checkedApps = new ArrayList<String>();
+			int len = appGrid.getCount();
+			SparseBooleanArray checked = appGrid.getCheckedItemPositions();
+			for(int i = 0; i < len; i++) {
+				if(checked.get(i)) {
+					checkedApps.add(mLabelIcons.get(i).name);
+				}
+			}
+			Toast.makeText(getBaseContext(), checkedApps.toString(), Toast.LENGTH_SHORT);
+			
 			return true;
 		}
 
