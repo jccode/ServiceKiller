@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import tk.jcchen.servicekiller.R;
-import tk.jcchen.servicekiller.util.AppIconAsyncLoadUtils;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
@@ -58,25 +57,16 @@ public class AppGridActivity extends Activity {
 		
 		progressbarComp = (RelativeLayout) findViewById(R.id.progressbarComp);
 		
-//		mApps = loadApps();
-//		mLabelIcons = initLableIcons(mApps);
 		
 		new AsyncTask<Void, Void, Pair<List<ResolveInfo>,List<IconEntity>>>() {
 
-//			ProgressDialog dialog = new ProgressDialog(AppGridActivity.this);
 			
 			@Override
 			protected void onPreExecute() {
-//				dialog.setMessage("Please wait...");
-//	            	dialog.setIndeterminate(true);
-//	            	dialog.show();
-				
 			}
 
 			@Override
 			protected void onPostExecute(Pair<List<ResolveInfo>,List<IconEntity>> result) {
-//				dialog.dismiss();
-				
 				mApps = result.first;
 				mLabelIcons = result.second;
 				
@@ -163,7 +153,7 @@ public class AppGridActivity extends Activity {
 	public class AppsAdapter extends BaseAdapter {
 		
 		private LayoutInflater mLayoutInflater;
-		private AppIconAsyncLoadUtils mIconUtils;
+//		private AppIconAsyncLoadUtils mIconUtils;
 		
 		public AppsAdapter(Context context) {
 			mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
