@@ -38,7 +38,8 @@ import android.widget.TextView;
 public class AppGridActivity extends Activity {
 	
 	private final static String TAG = "ServiceKiller";
-	GridView appGrid;
+	private GridView appGrid;
+	private ProgressBar progressbar;
 	private List<ResolveInfo> mApps;
 	private final int IMG_WIDTH = 80;
 	private List<IconEntity> mLabelIcons;
@@ -56,28 +57,34 @@ public class AppGridActivity extends Activity {
 		appGrid.setChoiceMode(GridView.CHOICE_MODE_MULTIPLE_MODAL);
 		appGrid.setMultiChoiceModeListener(new MultiChoiceModeListener());
 		
+		progressbar = (ProgressBar) findViewById(R.id.progressbar);
+		
 //		mApps = loadApps();
 //		mLabelIcons = initLableIcons(mApps);
 		
 		new AsyncTask<Void, Void, Pair<List<ResolveInfo>,List<IconEntity>>>() {
 
-			ProgressDialog dialog = new ProgressDialog(AppGridActivity.this);
+//			ProgressDialog dialog = new ProgressDialog(AppGridActivity.this);
 			
 			@Override
 			protected void onPreExecute() {
-				dialog.setMessage("Please wait...");
-	            	dialog.setIndeterminate(true);
-	            	dialog.show();
+//				dialog.setMessage("Please wait...");
+//	            	dialog.setIndeterminate(true);
+//	            	dialog.show();
+				
 			}
 
 			@Override
 			protected void onPostExecute(Pair<List<ResolveInfo>,List<IconEntity>> result) {
-				dialog.dismiss();
+//				dialog.dismiss();
 				
 				mApps = result.first;
 				mLabelIcons = result.second;
 				
 				appGrid.setAdapter(new AppsAdapter(AppGridActivity.this));
+				
+				progressbar.setVisibility(View.GONE);
+				appGrid.setVisibility(View.VISIBLE);
 			}
 
 			@Override
