@@ -7,7 +7,6 @@ import tk.jcchen.servicekiller.R;
 import tk.jcchen.servicekiller.util.AppIconAsyncLoadUtils;
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -32,14 +31,14 @@ import android.widget.Checkable;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 public class AppGridActivity extends Activity {
 	
 	private final static String TAG = "ServiceKiller";
 	private GridView appGrid;
-	private ProgressBar progressbar;
+	private RelativeLayout progressbarComp;
 	private List<ResolveInfo> mApps;
 	private final int IMG_WIDTH = 80;
 	private List<IconEntity> mLabelIcons;
@@ -57,7 +56,7 @@ public class AppGridActivity extends Activity {
 		appGrid.setChoiceMode(GridView.CHOICE_MODE_MULTIPLE_MODAL);
 		appGrid.setMultiChoiceModeListener(new MultiChoiceModeListener());
 		
-		progressbar = (ProgressBar) findViewById(R.id.progressbar);
+		progressbarComp = (RelativeLayout) findViewById(R.id.progressbarComp);
 		
 //		mApps = loadApps();
 //		mLabelIcons = initLableIcons(mApps);
@@ -83,7 +82,7 @@ public class AppGridActivity extends Activity {
 				
 				appGrid.setAdapter(new AppsAdapter(AppGridActivity.this));
 				
-				progressbar.setVisibility(View.GONE);
+				progressbarComp.setVisibility(View.GONE);
 				appGrid.setVisibility(View.VISIBLE);
 			}
 

@@ -8,6 +8,7 @@
     <string name="action_about">关于</string>
     <string name="hello_world">Hello world!</string>
     <string name="title_activity_app_grid">选择应用</string>
+    <string name="progressbar_loading">正在載入...</string>
     
     <string name="title_select_item">选择</string>
     <plurals name="sub_title_select_item">

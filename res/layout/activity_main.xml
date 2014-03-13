@@ -14,13 +14,13 @@
         android:layout_height="wrap_content"
         android:text="@string/hello_world" />
 
-    <ProgressBar
+    <!-- <ProgressBar
         android:id="@+id/progressBar1"
         style="?android:attr/progressBarStyleLarge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignLeft="@+id/textView1"
         android:layout_below="@+id/textView1"
-        android:layout_marginTop="20dp" />
+        android:layout_marginTop="20dp" /> -->
 
 </RelativeLayout>

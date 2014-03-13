@@ -8,6 +8,7 @@
     <string name="action_about">About</string>
     <string name="hello_world">Hello world!</string>
     <string name="title_activity_app_grid">Select Apps</string>
+    <string name="progressbar_loading">loading...</string>
     
     <string name="title_select_item">Select Items</string>
     <plurals name="sub_title_select_item">
