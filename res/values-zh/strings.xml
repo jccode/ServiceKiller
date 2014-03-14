@@ -6,6 +6,7 @@
     <string name="action_kill">干掉</string>
     <string name="action_settings">设置</string>
     <string name="action_about">关于</string>
+    <string name="action_search">搜索</string>
     <string name="hello_world">Hello world!</string>
     <string name="title_activity_app_grid">选择应用</string>
     <string name="progressbar_loading">正在载入...</string>

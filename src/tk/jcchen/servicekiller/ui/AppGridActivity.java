@@ -17,6 +17,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 import android.util.SparseBooleanArray;
@@ -28,18 +29,23 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.Checkable;
+import android.widget.Filter;
+import android.widget.Filterable;
 import android.widget.FrameLayout;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
+import android.widget.SearchView;
+import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class AppGridActivity extends Activity {
+public class AppGridActivity extends Activity implements OnQueryTextListener {
 	
 	private final static String TAG = "ServiceKiller";
 	private GridView appGrid;
 	private RelativeLayout progressbarComp;
+	private AppsAdapter mAdapter;
 	private List<ResolveInfo> mApps;
 	private final int IMG_WIDTH = 80;
 	private List<IconEntity> mLabelIcons;
@@ -62,7 +68,6 @@ public class AppGridActivity extends Activity {
 		
 		new AsyncTask<Void, Void, Pair<List<ResolveInfo>,List<IconEntity>>>() {
 
-			
 			@Override
 			protected void onPreExecute() {
 			}
@@ -72,7 +77,8 @@ public class AppGridActivity extends Activity {
 				mApps = result.first;
 				mLabelIcons = result.second;
 				
-				appGrid.setAdapter(new AppsAdapter(AppGridActivity.this));
+				mAdapter = new AppsAdapter(AppGridActivity.this);
+				appGrid.setAdapter(mAdapter);
 				
 				progressbarComp.setVisibility(View.GONE);
 				appGrid.setVisibility(View.VISIBLE);
@@ -82,7 +88,7 @@ public class AppGridActivity extends Activity {
 			protected Pair<List<ResolveInfo>,List<IconEntity>> doInBackground(Void... params) {
 				List<ResolveInfo> apps = loadApps();
 				List<IconEntity> labelIcons = initLableIcons(apps);
-				return new Pair(apps, labelIcons);
+				return new Pair<List<ResolveInfo>, List<IconEntity>>(apps, labelIcons);
 			}
 			
 			
@@ -104,7 +110,11 @@ public class AppGridActivity extends Activity {
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
-//		getMenuInflater().inflate(R.menu.app_grid, menu);
+		getMenuInflater().inflate(R.menu.app_grid, menu);
+		MenuItem queryItem = menu.findItem(R.id.action_search);
+		SearchView sv = new SearchView(this);
+		sv.setOnQueryTextListener(this);
+		queryItem.setActionView(sv);
 		return true;
 	}
 
@@ -141,6 +151,29 @@ public class AppGridActivity extends Activity {
 		return labelIcons;
 	}
 	
+//	----- implements OnQueryTextListener ------
+	
+	@Override
+	public boolean onQueryTextChange(String newText) {
+		if(TextUtils.isEmpty(newText)) {
+			mAdapter.getFilter().filter("");
+			appGrid.clearTextFilter();
+		} else {
+			mAdapter.getFilter().filter(newText.toString());
+		}
+		return true;
+	}
+
+	@Override
+	public boolean onQueryTextSubmit(String query) {
+		return false;
+	}
+	
+	
+
+//	=================
+//	inner class
+//	=================
 	
 	static class IconEntity {
 		String name;
@@ -152,24 +185,26 @@ public class AppGridActivity extends Activity {
 		}
 	}
 	
-	public class AppsAdapter extends BaseAdapter {
+	public class AppsAdapter extends BaseAdapter implements Filterable {
 		
 		private LayoutInflater mLayoutInflater;
 //		private AppIconAsyncLoadUtils mIconUtils;
+		private List<IconEntity> origData;
 		
 		public AppsAdapter(Context context) {
 			mLayoutInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 //			mIconUtils = new AppIconAsyncLoadUtils(getResources());
+			origData = new ArrayList<AppGridActivity.IconEntity>(mLabelIcons);
 		}
 
 		@Override
 		public int getCount() {
-			return mApps.size();
+			return mLabelIcons.size();
 		}
 
 		@Override
 		public Object getItem(int position) {
-			return mApps.get(position);
+			return mLabelIcons.get(position);
 		}
 
 		@Override
@@ -200,6 +235,42 @@ public class AppGridActivity extends Activity {
 			view.setView(lableIcon.image, lableIcon.name);
 			
 			return view;
+		}
+
+		@Override
+		public Filter getFilter() {
+			return new Filter() {
+
+				@Override
+				protected FilterResults performFiltering(CharSequence constraint) {
+					constraint = constraint.toString().toLowerCase();
+					FilterResults result = new FilterResults();
+					if(constraint != null && constraint.toString().length() > 0) {
+						List<IconEntity> founded = new ArrayList<AppGridActivity.IconEntity>();
+						for(IconEntity item : origData) {
+							if(item.name.toLowerCase().contains(constraint)) {
+								founded.add(item);
+							}
+						}
+						result.values = founded;
+						result.count = founded.size();
+						
+					} else {
+						result.values = origData;
+						result.count = origData.size();
+					}
+					
+					return result;
+				}
+
+				@Override
+				protected void publishResults(CharSequence constraint,
+						FilterResults results) {
+					mLabelIcons = (List<IconEntity>) results.values;
+					notifyDataSetChanged();
+				}
+				
+			};
 		}
 		
 	}
@@ -262,8 +333,7 @@ public class AppGridActivity extends Activity {
 		
 		@Override
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-			
-			Toast.makeText(getBaseContext(), "Action Item clicked!", Toast.LENGTH_SHORT);
+//			Toast.makeText(getBaseContext(), "Action Item clicked!", Toast.LENGTH_SHORT).show();
 			
 			List<String> checkedApps = new ArrayList<String>();
 			int len = appGrid.getCount();
@@ -273,7 +343,7 @@ public class AppGridActivity extends Activity {
 					checkedApps.add(mLabelIcons.get(i).name);
 				}
 			}
-			Toast.makeText(getBaseContext(), checkedApps.toString(), Toast.LENGTH_SHORT);
+			Toast.makeText(getBaseContext(), "Selected items:"+checkedApps.toString(), Toast.LENGTH_SHORT).show();
 			
 			return true;
 		}
@@ -292,6 +362,9 @@ public class AppGridActivity extends Activity {
 
 		@Override
 		public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
+			MenuItem addItem = menu.add(R.string.action_add);
+			addItem.setIcon(R.drawable.add);
+			addItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
 			return true;
 		}
 
@@ -309,4 +382,5 @@ public class AppGridActivity extends Activity {
 		}
 		
 	}
+
 }
