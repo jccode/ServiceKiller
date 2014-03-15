@@ -38,7 +38,6 @@ import android.widget.RelativeLayout;
 import android.widget.SearchView;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
-import android.widget.Toast;
 
 public class AppGridActivity extends Activity implements OnQueryTextListener {
 	
@@ -146,7 +145,7 @@ public class AppGridActivity extends Activity implements OnQueryTextListener {
 		PackageManager pm = getPackageManager();
 		for(ResolveInfo info : apps) {
 			ActivityInfo i = info.activityInfo;
-			labelIcons.add(new IconEntity(i.loadLabel(pm).toString(), i.loadIcon(pm)));
+			labelIcons.add(new IconEntity(i.loadLabel(pm).toString(), i.loadIcon(pm), i.packageName));
 		}
 		return labelIcons;
 	}
@@ -178,10 +177,12 @@ public class AppGridActivity extends Activity implements OnQueryTextListener {
 	static class IconEntity {
 		String name;
 		Drawable image;
-		public IconEntity(String name, Drawable image) {
+		String packageName;
+		public IconEntity(String name, Drawable image, String packageName) {
 			super();
 			this.name = name;
 			this.image = image;
+			this.packageName = packageName;
 		}
 	}
 	
@@ -333,17 +334,22 @@ public class AppGridActivity extends Activity implements OnQueryTextListener {
 		
 		@Override
 		public boolean onActionItemClicked(ActionMode mode, MenuItem item) {
-//			Toast.makeText(getBaseContext(), "Action Item clicked!", Toast.LENGTH_SHORT).show();
 			
-			List<String> checkedApps = new ArrayList<String>();
+			ArrayList<String> checkedApps = new ArrayList<String>();
 			int len = appGrid.getCount();
 			SparseBooleanArray checked = appGrid.getCheckedItemPositions();
 			for(int i = 0; i < len; i++) {
 				if(checked.get(i)) {
-					checkedApps.add(mLabelIcons.get(i).name);
+					checkedApps.add(mLabelIcons.get(i).packageName);
 				}
 			}
-			Toast.makeText(getBaseContext(), "Selected items:"+checkedApps.toString(), Toast.LENGTH_SHORT).show();
+//			Toast.makeText(getBaseContext(), "Selected items:"+checkedApps.toString(), Toast.LENGTH_SHORT).show();
+			
+			// put the selected result to MainActivity
+			Intent result = new Intent();
+			result.putStringArrayListExtra("result", checkedApps);
+			AppGridActivity.this.setResult(RESULT_OK, result);
+			AppGridActivity.this.finish();
 			
 			return true;
 		}
