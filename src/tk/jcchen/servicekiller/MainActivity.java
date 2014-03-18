@@ -3,6 +3,7 @@ package tk.jcchen.servicekiller;
 import java.util.ArrayList;
 
 import tk.jcchen.servicekiller.ui.AppGridActivity;
+import tk.jcchen.servicekiller.ui.SettingsActivity;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -21,7 +22,7 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity {
 	
-	public static final String LOG_TAG = "ServiceKiller";
+	public static final String TAG = "ServiceKiller";
 	static final int REQUEST_APPS = 1;
 
 	@Override
@@ -29,6 +30,9 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		
+	}
+
+	private void test() {
 		Button btn = (Button) findViewById(R.id.button1);
 		btn.setOnClickListener(new View.OnClickListener() {
 			
@@ -76,37 +80,33 @@ public class MainActivity extends Activity {
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
-		String intentClass = null;
+		Intent intent = null;
 		
 		switch (item.getItemId()) {
 		case R.id.action_add:
-//			intentClass = "tk.jcchen.servicekiller.ui.AppGridActivity";
-//			break;
-			Intent intent = new Intent(this, AppGridActivity.class);
+			intent = new Intent(this, AppGridActivity.class);
 			startActivityForResult(intent, REQUEST_APPS);
 			return true;
 			
 		case R.id.action_settings:
-			intentClass = "tk.jcchen.servicekiller.ui.SettingsActivity";
+			intent = new Intent(this, SettingsActivity.class);
+			startActivity(intent);
+			return true;
+			
+		case R.id.action_kill:
 			break;
 			
+		case R.id.action_remove:
+			break;
+			
+		case R.id.action_about:
+			break;
 
 		default:
 			return super.onOptionsItemSelected(item);
 		}
 		
-		if(intentClass != null) {
-			try {
-//				Log.i(LOG_TAG, intentClass);
-				Intent intent = new Intent(this, Class.forName(intentClass));
-				startActivity(intent);
-//				Log.i(LOG_TAG, "start activity " + intentClass);
-			} catch (ClassNotFoundException e) {
-				Log.e(LOG_TAG, e.getMessage(), e);
-			}
-		}
-		
-		return false;
+		return true;
 	}
 
 	@Override

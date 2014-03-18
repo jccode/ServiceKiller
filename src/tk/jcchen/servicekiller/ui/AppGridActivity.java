@@ -369,7 +369,7 @@ public class AppGridActivity extends Activity implements OnQueryTextListener {
 		@Override
 		public boolean onPrepareActionMode(ActionMode mode, Menu menu) {
 			MenuItem addItem = menu.add(R.string.action_add);
-			addItem.setIcon(R.drawable.add);
+			addItem.setIcon(R.drawable.ic_add);
 			addItem.setShowAsAction(MenuItem.SHOW_AS_ACTION_ALWAYS);
 			return true;
 		}

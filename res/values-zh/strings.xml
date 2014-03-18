@@ -3,6 +3,8 @@
 
     <string name="app_name">服务杀手</string>
     <string name="action_add">添加</string>
+    <string name="action_selectall">全选</string>
+    <string name="action_remove">删除</string>
     <string name="action_kill">干掉</string>
     <string name="action_settings">设置</string>
     <string name="action_about">关于</string>

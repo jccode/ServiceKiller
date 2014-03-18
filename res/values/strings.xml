@@ -3,6 +3,8 @@
 
     <string name="app_name">ServiceKiller</string>
     <string name="action_add">Add</string>
+    <string name="action_selectall">Select all</string>
+    <string name="action_remove">Remove</string>
     <string name="action_kill">Kill</string>
     <string name="action_settings">Settings</string>
     <string name="action_about">About</string>
