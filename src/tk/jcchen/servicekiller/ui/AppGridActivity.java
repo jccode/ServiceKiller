@@ -123,7 +123,7 @@ public class AppGridActivity extends Activity implements RetainedFragment.Retain
 			SparseBooleanArray checked = appGrid.getCheckedItemPositions();
 			for(int i = 0; i < len; i++) {
 				if(checked.get(i)) {
-					checkedApps.add(mRetainedFragment.mLabelIcons.get(i).packageName);
+					checkedApps.add(mRetainedFragment.mLabelIcons.get(i).getPackageName());
 				}
 			}
 //			Toast.makeText(getBaseContext(), "Selected items:"+checkedApps.toString(), Toast.LENGTH_SHORT).show();
@@ -164,30 +164,12 @@ public class AppGridActivity extends Activity implements RetainedFragment.Retain
 			Resources res = getResources();
 			int selectCount = appGrid.getCheckedItemCount();
 			mode.setSubtitle(res.getQuantityString(R.plurals.sub_title_select_item, selectCount, selectCount));
-			
-			// Test: get package name
-//			ResolveInfo info = mApps.get(position);
-//			String pkgName = info.activityInfo.packageName;
-//			Log.d(TAG, pkgName);
 		}
 		
 	}
 
-
-
 }
 
-class IconEntity {
-	String name;
-	Drawable image;
-	String packageName;
-	public IconEntity(String name, Drawable image, String packageName) {
-		super();
-		this.name = name;
-		this.image = image;
-		this.packageName = packageName;
-	}
-}
 
 
 class CheckableView extends FrameLayout implements Checkable {
@@ -401,7 +383,7 @@ class RetainedFragment extends Fragment implements OnQueryTextListener {
 			}
 			
 			IconEntity lableIcon = mLabelIcons.get(position);
-			view.setView(lableIcon.image, lableIcon.name);
+			view.setView(lableIcon.getImage(), lableIcon.getName());
 			
 			return view;
 		}
@@ -417,7 +399,7 @@ class RetainedFragment extends Fragment implements OnQueryTextListener {
 					if(constraint != null && constraint.toString().length() > 0) {
 						List<IconEntity> founded = new ArrayList<IconEntity>();
 						for(IconEntity item : origData) {
-							if(item.name.toLowerCase().contains(constraint)) {
+							if(item.getName().toLowerCase().contains(constraint)) {
 								founded.add(item);
 							}
 						}

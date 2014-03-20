@@ -1,10 +1,15 @@
 package tk.jcchen.servicekiller;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import tk.jcchen.servicekiller.ui.AppGridActivity;
+import tk.jcchen.servicekiller.ui.IconEntity;
 import tk.jcchen.servicekiller.ui.SettingsActivity;
 import android.app.Activity;
+import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
@@ -15,60 +20,37 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
+import android.view.ViewGroup;
+import android.widget.ArrayAdapter;
+import android.widget.CheckedTextView;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
-import android.widget.TextView;
+import android.widget.ListView;
 
 public class MainActivity extends Activity {
 	
 	public static final String TAG = "ServiceKiller";
 	static final int REQUEST_APPS = 1;
+	private final List<String> defaultApps = Arrays.asList(
+			"com.tencent.mm", "com.eg.android.AlipayGphone", "com.tencent.mobileqq");
+	private RetainedFragment mFragment;
+	private AppsArrayAdapter mAdapter;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		ListView listView = (ListView) findViewById(R.id.main);
 		
-	}
-
-	private void test() {
-		Button btn = (Button) findViewById(R.id.button1);
-		btn.setOnClickListener(new View.OnClickListener() {
-			
-			@Override
-			public void onClick(View v) {
-				String pkg = "com.tencent.mm";
-				PackageManager pm = getPackageManager();
-				try {
-					ApplicationInfo ai = pm.getApplicationInfo(pkg, 0);
-					Drawable icon = ai.loadIcon(pm);
-					CharSequence label = ai.loadLabel(pm);
-					
-					RelativeLayout layout = (RelativeLayout) MainActivity.this.findViewById(R.id.main);
-					ImageView imageView = new ImageView(MainActivity.this);
-					imageView.setBackground(icon);
-					imageView.setId(1);
-					RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(
-							RelativeLayout.LayoutParams.WRAP_CONTENT, 
-							RelativeLayout.LayoutParams.WRAP_CONTENT);
-					params.addRule(RelativeLayout.BELOW, R.id.textView1);
-					layout.addView(imageView, params);
-					
-					TextView textView = new TextView(MainActivity.this);
-					textView.setText(label);
-					RelativeLayout.LayoutParams params2 = new RelativeLayout.LayoutParams(
-							RelativeLayout.LayoutParams.WRAP_CONTENT, 
-							RelativeLayout.LayoutParams.WRAP_CONTENT);
-					params2.addRule(RelativeLayout.RIGHT_OF, 1);
-					layout.addView(textView, params2);
-					
-					
-				} catch (NameNotFoundException e) {
-					e.printStackTrace();
-				}
-			}
-		});
+		FragmentManager fm = getFragmentManager();
+		mFragment = (RetainedFragment) fm.findFragmentByTag("work");
+		if(mFragment == null) {
+			mFragment = new RetainedFragment();
+			loadApps(defaultApps);
+			fm.beginTransaction().add(mFragment, "work").commit();
+		}
+		
+		mAdapter = new AppsArrayAdapter(this, mFragment.apps);
+		listView.setAdapter(mAdapter);
 	}
 
 	@Override
@@ -114,8 +96,111 @@ public class MainActivity extends Activity {
 		if(requestCode == REQUEST_APPS) {
 			if(resultCode == RESULT_OK) {
 				ArrayList<String> result = data.getExtras().getStringArrayList("result");
-				((TextView)this.findViewById(R.id.textView1)).setText(result.toString());
+				loadApps(result);
 			}
 		}
 	}
+	
+	
+	void loadApps(List<String> packageNames) {
+		List<IconEntity> entities = new ArrayList<IconEntity>();
+		PackageManager pm = getPackageManager();
+		for(String packageName : packageNames) {
+			try {
+				ApplicationInfo info = pm.getApplicationInfo(packageName, 0);
+				Drawable icon = info.loadIcon(pm);
+				CharSequence name = info.loadLabel(pm);
+				IconEntity entity = new IconEntity(name.toString(), icon, packageName);
+				entities.add(entity);
+			} catch (NameNotFoundException e) {
+				Log.e(TAG, e.getMessage());
+			}
+		}
+		
+		mFragment.apps = entities;
+	}
+	
+	
+	public static class RetainedFragment extends Fragment {
+		
+		List<IconEntity> apps = null;
+		
+		@Override
+		public void onActivityCreated(Bundle savedInstanceState) {
+			super.onActivityCreated(savedInstanceState);
+		}
+
+		@Override
+		public void onAttach(Activity activity) {
+			super.onAttach(activity);
+		}
+
+		@Override
+		public void onCreate(Bundle savedInstanceState) {
+			super.onCreate(savedInstanceState);
+			setRetainInstance(true);
+		}
+
+		@Override
+		public void onDestroy() {
+			super.onDestroy();
+		}
+
+		@Override
+		public void onDetach() {
+			super.onDetach();
+		}
+	}
+	
+	static class ViewHolder {
+		ImageView icon;
+		CheckedTextView text;
+	}
+	
+	class AppsArrayAdapter extends ArrayAdapter<IconEntity> {
+		
+		private final Activity context;
+		private final List<IconEntity> list;
+
+		public AppsArrayAdapter(Activity context, List<IconEntity> list) {
+			super(context, R.layout.app_list_item, list);
+			this.context = context;
+			this.list = list;
+		}
+		
+		@Override
+		public View getView(int position, View convertView, ViewGroup parent) {
+			View view = null;
+			IconEntity entity = list.get(position);
+			ViewHolder holder = null;
+			if(convertView == null) {
+				view = context.getLayoutInflater().inflate(R.layout.app_list_item, null, false);
+				holder = new ViewHolder();
+				holder.icon = (ImageView) view.findViewById(R.id.listitem_icon);
+				holder.text = (CheckedTextView) view.findViewById(R.id.listitem_text);
+				holder.text.setOnClickListener(new View.OnClickListener() {
+					@Override
+					public void onClick(View v) {
+						CheckedTextView text = ((CheckedTextView) v);
+						IconEntity entity = (IconEntity) v.getTag();
+						entity.setSelected(text.isSelected());
+						text.toggle();
+					}
+				});
+				
+				view.setTag(holder);
+			} else {
+				view = convertView;
+			}
+			
+			holder = (ViewHolder) view.getTag();
+			holder.text.setText(entity.getName());
+			holder.text.setTag(entity);
+			holder.icon.setBackground(entity.getImage());
+			
+			return view;
+		}
+		
+	}
 }
+
