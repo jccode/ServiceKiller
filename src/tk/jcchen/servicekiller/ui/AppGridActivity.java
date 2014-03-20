@@ -7,6 +7,7 @@ import tk.jcchen.servicekiller.R;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.Fragment;
+import android.app.FragmentManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -19,12 +20,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Pair;
 import android.util.SparseBooleanArray;
 import android.view.ActionMode;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
@@ -40,105 +41,45 @@ import android.widget.SearchView;
 import android.widget.SearchView.OnQueryTextListener;
 import android.widget.TextView;
 
-public class AppGridActivity extends Activity {
+public class AppGridActivity extends Activity implements OnQueryTextListener, RetainedFragment.RetainedCallbacks {
 	
+	private final static String TAG = "ServiceKiller";
+	private GridView appGrid;
+	private AppsAdapter mAdapter;
+	private List<ResolveInfo> mApps;
+	private List<IconEntity> mLabelIcons;
+	private final int IMG_WIDTH = 80;
+	private RetainedFragment retainedFragment;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		
-		if(savedInstanceState == null) {
-			getFragmentManager().beginTransaction().add(android.R.id.content, 
-					new AppGridFragment(this)).commit();
+		setContentView(R.layout.activity_app_grid);
+		// Show the Up button in the action bar.
+		setupActionBar();
+		
+		appGrid = (GridView) findViewById(R.id.grid_apps);
+//		appGrid.setAdapter(new AppsAdapter(this));
+		appGrid.setChoiceMode(GridView.CHOICE_MODE_MULTIPLE_MODAL);
+		appGrid.setMultiChoiceModeListener(new MultiChoiceModeListener());
+		
+		FragmentManager fm = getFragmentManager();
+		retainedFragment = (RetainedFragment) fm.findFragmentByTag("work");
+		Log.d(TAG, "AppGridActivity onCreate ==> retainedFragment: " + retainedFragment);
+		if(retainedFragment!=null) Log.d(TAG, "AppGridActivity onCreate ==> retainedFragment.mApps: " + retainedFragment.mApps);
+		if(retainedFragment == null) {
+			Log.d(TAG, "AppGridActivity onCreate ==> retainedFragment is null. ");
+			
+			retainedFragment = new RetainedFragment();
+			fm.beginTransaction().add(retainedFragment, "work").commit();
+		} else if(retainedFragment.mApps != null) {
+			Log.d(TAG, "AppGridActivity onCreate ==> retainedFragment is not null. ");
+			
+			setDatas();
 		}
 	}
-	
-}
 
-class AppGridFragment extends Fragment implements OnQueryTextListener {
-
-	Activity activity;
-	private GridView appGrid;
-	private RelativeLayout progressbarComp;
-	private AppsAdapter mAdapter;
-	private List<ResolveInfo> mApps;
-	private final int IMG_WIDTH = 80;
-	private List<IconEntity> mLabelIcons;
-
-	public AppGridFragment(Activity activity) {
-		super();
-//		activity = getActivity();
-		this.activity = activity;
-	}
-	
-
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		// keep fragement around during a configuration change.
-		setRetainInstance(true);
-	}
-	
-
-	@Override
-	public void onActivityCreated(Bundle savedInstanceState) {
-		super.onActivityCreated(savedInstanceState);
-	}
-
-
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
-		super.onCreateView(inflater, container, savedInstanceState);
-		
-		View view = inflater.inflate(R.layout.activity_app_grid, container, false);
-		appGrid = (GridView) view.findViewById(R.id.grid_apps);
-		appGrid.setChoiceMode(GridView.CHOICE_MODE_MULTIPLE_MODAL);
-		
-		
-		progressbarComp = (RelativeLayout) view.findViewById(R.id.progressbarComp);
-		
-		
-		new AsyncTask<Void, Void, Pair<List<ResolveInfo>,List<IconEntity>>>() {
-
-			@Override
-			protected void onPreExecute() {
-			}
-
-			@Override
-			protected void onPostExecute(Pair<List<ResolveInfo>,List<IconEntity>> result) {
-				mApps = result.first;
-				mLabelIcons = result.second;
-				
-				mAdapter = new AppsAdapter(activity);
-				appGrid.setAdapter(mAdapter);
-				appGrid.setMultiChoiceModeListener(new MultiChoiceModeListener());
-				
-				progressbarComp.setVisibility(View.GONE);
-				appGrid.setVisibility(View.VISIBLE);
-			}
-
-			@Override
-			protected Pair<List<ResolveInfo>,List<IconEntity>> doInBackground(Void... params) {
-				List<ResolveInfo> apps = loadApps();
-				List<IconEntity> labelIcons = initLableIcons(apps);
-				return new Pair<List<ResolveInfo>, List<IconEntity>>(apps, labelIcons);
-			}
-			
-			
-		}.execute();
-		
-		return view;
-	}
-	
-
-	@Override
-	public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
-		inflater.inflate(R.menu.app_grid, menu);
-		MenuItem queryItem = menu.findItem(R.id.action_search);
-		SearchView sv = new SearchView(activity);
-		sv.setOnQueryTextListener(this);
-		queryItem.setActionView(sv);
-	}
 
 	
 	/**
@@ -147,10 +88,20 @@ class AppGridFragment extends Fragment implements OnQueryTextListener {
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	private void setupActionBar() {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-			activity.getActionBar().setDisplayHomeAsUpEnabled(true);
+			getActionBar().setDisplayHomeAsUpEnabled(true);
 		}
 	}
 
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		// Inflate the menu; this adds items to the action bar if it is present.
+		getMenuInflater().inflate(R.menu.app_grid, menu);
+		MenuItem queryItem = menu.findItem(R.id.action_search);
+		SearchView sv = new SearchView(this);
+		sv.setOnQueryTextListener(this);
+		queryItem.setActionView(sv);
+		return true;
+	}
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
@@ -163,28 +114,13 @@ class AppGridFragment extends Fragment implements OnQueryTextListener {
 			//
 			// http://developer.android.com/design/patterns/navigation.html#up-vs-back
 			//
-			NavUtils.navigateUpFromSameTask(activity);
+			NavUtils.navigateUpFromSameTask(this);
 			return true;
 		}
 		return super.onOptionsItemSelected(item);
 	}
 
-	private List<ResolveInfo> loadApps() {
-		Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
-		mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
-		return activity.getPackageManager().queryIntentActivities(mainIntent, 0);
-	}
-	
-	private List<IconEntity> initLableIcons(List<ResolveInfo> apps) {
-		List<IconEntity> labelIcons = new ArrayList<IconEntity>(apps.size());
-		PackageManager pm = activity.getPackageManager();
-		for(ResolveInfo info : apps) {
-			ActivityInfo i = info.activityInfo;
-			labelIcons.add(new IconEntity(i.loadLabel(pm).toString(), i.loadIcon(pm), i.packageName));
-		}
-		return labelIcons;
-	}
-	
+
 	
 //	----- implements OnQueryTextListener ------
 	
@@ -204,9 +140,27 @@ class AppGridFragment extends Fragment implements OnQueryTextListener {
 		return false;
 	}
 	
-	
+	@Override
+	public void onPostExecute() {
+		setDatas();
+	}
+
+	private void setDatas() {
+		mApps = retainedFragment.mApps;
+		mLabelIcons = retainedFragment.mLabelIcons;
+		
+		mAdapter = new AppsAdapter(AppGridActivity.this);
+		appGrid.setAdapter(mAdapter);
+		appGrid.setVisibility(View.VISIBLE);
+		
+		Log.d(TAG, "AppGridActivity onCreate ==> setDates.");
+	}
 	
 
+//	=================
+//	inner class
+//	=================
+	
 	public class AppsAdapter extends BaseAdapter implements Filterable {
 		
 		private LayoutInflater mLayoutInflater;
@@ -244,7 +198,7 @@ class AppGridFragment extends Fragment implements OnQueryTextListener {
 			
 			CheckableView view;
 			if(convertView == null) {
-				view = new CheckableView(activity, parent);
+				view = new CheckableView(AppGridActivity.this, parent);
 			} else {
 				view = (CheckableView) convertView;
 			}
@@ -298,6 +252,59 @@ class AppGridFragment extends Fragment implements OnQueryTextListener {
 	}
 	
 	
+	public class CheckableView extends FrameLayout implements Checkable {
+
+		private boolean mChecked;
+		private FrameLayout mView;
+		
+		public CheckableView(Context context, ViewGroup parent) {
+			super(context);
+			mView = (FrameLayout) getLayoutInflater().inflate(R.layout.app_grid_cell, parent, false);
+			this.addView(mView);
+		}
+		
+		public CheckableView(Context context, ViewGroup parent, Drawable img, CharSequence name) {
+			this(context, parent);
+			setView(img, name);
+		}
+		
+		protected void setView(Drawable img, CharSequence name) {
+			getImageView().setImageDrawable(img);
+			setAppName(name);
+		}
+		
+		protected void setAppName(CharSequence name) {
+			((TextView)mView.findViewById(R.id.app_name)).setText(name);
+		}
+		
+		protected ImageView getImageView() {
+			return ((ImageView)mView.findViewById(R.id.app_img));
+		}
+		
+
+		@Override
+		public boolean isChecked() {
+			return mChecked;
+		}
+
+		@Override
+		public void setChecked(boolean checked) {
+			mChecked = checked;
+			
+			if(checked) {
+				mView.findViewById(R.id.app_overlay).setVisibility(VISIBLE);
+			} else {
+				mView.findViewById(R.id.app_overlay).setVisibility(INVISIBLE);
+			}
+		}
+
+		@Override
+		public void toggle() {
+			setChecked(!mChecked);
+		}
+		
+	}
+	
 	public class MultiChoiceModeListener implements GridView.MultiChoiceModeListener {
 		
 		@Override
@@ -316,8 +323,8 @@ class AppGridFragment extends Fragment implements OnQueryTextListener {
 			// put the selected result to MainActivity
 			Intent result = new Intent();
 			result.putStringArrayListExtra("result", checkedApps);
-			activity.setResult(Activity.RESULT_OK, result);
-			activity.finish();
+			AppGridActivity.this.setResult(RESULT_OK, result);
+			AppGridActivity.this.finish();
 			
 			return true;
 		}
@@ -350,15 +357,16 @@ class AppGridFragment extends Fragment implements OnQueryTextListener {
 			mode.setSubtitle(res.getQuantityString(R.plurals.sub_title_select_item, selectCount, selectCount));
 			
 			// Test: get package name
-//			ResolveInfo info = mApps.get(position);
-//			String pkgName = info.activityInfo.packageName;
-//			Log.d(TAG, pkgName);
+			ResolveInfo info = mApps.get(position);
+			String pkgName = info.activityInfo.packageName;
+			Log.d(TAG, pkgName);
 		}
 		
 	}
-	
-}
 
+
+
+}
 
 class IconEntity {
 	String name;
@@ -372,58 +380,97 @@ class IconEntity {
 	}
 }
 
-
-
-class CheckableView extends FrameLayout implements Checkable {
-
-	private boolean mChecked;
-	private FrameLayout mView;
+class RetainedFragment extends Fragment {
 	
-	public CheckableView(Context context, ViewGroup parent) {
-		super(context);
-		LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-		mView = (FrameLayout) inflater.inflate(R.layout.app_grid_cell, parent, false);
-		this.addView(mView);
+	public interface RetainedCallbacks {
+		void onPostExecute();
 	}
 	
-	public CheckableView(Context context, ViewGroup parent, Drawable img, CharSequence name) {
-		this(context, parent);
-		setView(img, name);
-	}
-	
-	protected void setView(Drawable img, CharSequence name) {
-		getImageView().setImageDrawable(img);
-		setAppName(name);
-	}
-	
-	protected void setAppName(CharSequence name) {
-		((TextView)mView.findViewById(R.id.app_name)).setText(name);
-	}
-	
-	protected ImageView getImageView() {
-		return ((ImageView)mView.findViewById(R.id.app_img));
-	}
+	private final static String TAG = "ServiceKiller";
+	private RetainedCallbacks mCallback;
+	List<ResolveInfo> mApps = null;
+	List<IconEntity> mLabelIcons = null;
+	private RelativeLayout progressbarComp;
 	
 
 	@Override
-	public boolean isChecked() {
-		return mChecked;
+	public void onAttach(Activity activity) {
+		super.onAttach(activity);
+		mCallback = (RetainedCallbacks) activity;
 	}
 
 	@Override
-	public void setChecked(boolean checked) {
-		mChecked = checked;
+	public void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setRetainInstance(true);
 		
-		if(checked) {
-			mView.findViewById(R.id.app_overlay).setVisibility(VISIBLE);
-		} else {
-			mView.findViewById(R.id.app_overlay).setVisibility(INVISIBLE);
-		}
+		Log.d(TAG, "RetainedFragment onCreate.");
+		
+		new AsyncTask<Void, Void, Pair<List<ResolveInfo>,List<IconEntity>>>() {
+
+			@Override
+			protected void onPreExecute() {
+			}
+
+			@Override
+			protected void onPostExecute(Pair<List<ResolveInfo>,List<IconEntity>> result) {
+				mApps = result.first;
+				mLabelIcons = result.second;
+				progressbarComp.setVisibility(View.GONE);
+				mCallback.onPostExecute();
+				
+				Log.d(TAG, "AsyncTask onPostExecute.");
+			}
+
+			@Override
+			protected Pair<List<ResolveInfo>,List<IconEntity>> doInBackground(Void... params) {
+				List<ResolveInfo> apps = loadApps();
+				List<IconEntity> labelIcons = initLableIcons(apps);
+				return new Pair<List<ResolveInfo>, List<IconEntity>>(apps, labelIcons);
+			}
+
+			@Override
+			protected void onProgressUpdate(Void... values) {
+				super.onProgressUpdate(values);
+				Log.d(TAG, "AsyncTask onProgressUpdate.");
+			}
+			
+		}.execute();
+	}
+	
+
+	@Override
+	public void onActivityCreated(Bundle savedInstanceState) {
+		super.onActivityCreated(savedInstanceState);
+		progressbarComp = (RelativeLayout) getActivity().findViewById(R.id.progressbarComp);
+		if(mApps == null)
+			progressbarComp.setVisibility(View.VISIBLE);
+		
+		Log.d(TAG, "RetainedFragment onActivityCreated.");
 	}
 
 	@Override
-	public void toggle() {
-		setChecked(!mChecked);
+	public void onDetach() {
+		super.onDetach();
+		mCallback = null;
+		progressbarComp = null;
+		
+		Log.d(TAG, "RetainedFragment onDetach.");
+	}
+
+	private List<ResolveInfo> loadApps() {
+		Intent mainIntent = new Intent(Intent.ACTION_MAIN, null);
+		mainIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+		return getActivity().getPackageManager().queryIntentActivities(mainIntent, 0);
 	}
 	
+	private List<IconEntity> initLableIcons(List<ResolveInfo> apps) {
+		List<IconEntity> labelIcons = new ArrayList<IconEntity>(apps.size());
+		PackageManager pm = getActivity().getPackageManager();
+		for(ResolveInfo info : apps) {
+			ActivityInfo i = info.activityInfo;
+			labelIcons.add(new IconEntity(i.loadLabel(pm).toString(), i.loadIcon(pm), i.packageName));
+		}
+		return labelIcons;
+	}
 }
