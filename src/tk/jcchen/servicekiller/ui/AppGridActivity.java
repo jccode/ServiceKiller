@@ -285,8 +285,6 @@ class RetainedFragment extends Fragment implements OnQueryTextListener {
 				
 				progressbarComp.setVisibility(View.GONE);
 				mCallback.onPostExecute();
-				
-				Log.d(TAG, "AsyncTask onPostExecute.");
 			}
 
 			@Override
@@ -299,7 +297,6 @@ class RetainedFragment extends Fragment implements OnQueryTextListener {
 			@Override
 			protected void onProgressUpdate(Void... values) {
 				super.onProgressUpdate(values);
-				Log.d(TAG, "AsyncTask onProgressUpdate.");
 			}
 			
 		}.execute();
@@ -313,8 +310,6 @@ class RetainedFragment extends Fragment implements OnQueryTextListener {
 		if(mApps == null) {
 			progressbarComp.setVisibility(View.VISIBLE);
 		}
-		
-		Log.d(TAG, "RetainedFragment onActivityCreated.");
 	}
 
 	@Override
@@ -322,8 +317,16 @@ class RetainedFragment extends Fragment implements OnQueryTextListener {
 		super.onDetach();
 		mCallback = null;
 		progressbarComp = null;
-		
-		Log.d(TAG, "RetainedFragment onDetach.");
+	}
+	
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		mApps = null;
+		mLabelIcons = null;
+		mAdapter = null;
+		mSearchView = null;
 	}
 
 	private List<ResolveInfo> loadApps() {
