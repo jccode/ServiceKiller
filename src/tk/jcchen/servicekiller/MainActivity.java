@@ -18,7 +18,6 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.SparseBooleanArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -53,7 +52,7 @@ public class MainActivity extends Activity {
 		}
 		mListView.setEmptyView(findViewById(android.R.id.empty));
 		
-		mAdapter = new AppsArrayAdapter(this, mFragment.apps);
+		mAdapter = new AppsArrayAdapter(this);
 		mListView.setAdapter(mAdapter);
 	}
 
@@ -78,6 +77,10 @@ public class MainActivity extends Activity {
 			intent = new Intent(this, SettingsActivity.class);
 			startActivity(intent);
 			return true;
+		
+		case R.id.action_selectall:
+			selectAllItems();
+			break;
 			
 		case R.id.action_kill:
 			break;
@@ -128,12 +131,29 @@ public class MainActivity extends Activity {
 	}
 	
 	private void removeAppFromList() {
-		for(IconEntity entity : mFragment.apps) {
-			if(entity.isSelected()) {
-				mFragment.apps.remove(entity);
+		for(int i = mFragment.apps.size()-1; i >= 0; i--) {
+			if(mFragment.apps.get(i).isSelected()) {
+				mFragment.apps.remove(i);
 			}
 		}
+		
 		mAdapter.notifyDataSetChanged();
+	}
+	
+	private void selectAllItems() {
+		boolean checkState = isAllChecked()? false: true;
+		for(int i=0, len=mFragment.apps.size(); i < len; i++) {
+			mFragment.apps.get(i).setSelected(checkState);
+		}
+		mAdapter.notifyDataSetChanged();
+	}
+	
+	private boolean isAllChecked() {
+		for(IconEntity entity : mFragment.apps) {
+			if(!entity.isSelected()) 
+				return false;
+		}
+		return true;
 	}
 	
 	
@@ -176,18 +196,16 @@ public class MainActivity extends Activity {
 	class AppsArrayAdapter extends ArrayAdapter<IconEntity> {
 		
 		private final Activity context;
-		private final List<IconEntity> list;
 
-		public AppsArrayAdapter(Activity context, List<IconEntity> list) {
-			super(context, R.layout.app_list_item, list);
+		public AppsArrayAdapter(Activity context) {
+			super(context, R.layout.app_list_item, mFragment.apps);
 			this.context = context;
-			this.list = list;
 		}
 		
 		@Override
 		public View getView(int position, View convertView, ViewGroup parent) {
 			View view = null;
-			IconEntity entity = list.get(position);
+			IconEntity entity = mFragment.apps.get(position);
 			ViewHolder holder = null;
 			if(convertView == null) {
 				view = context.getLayoutInflater().inflate(R.layout.app_list_item, null, false);
@@ -198,9 +216,9 @@ public class MainActivity extends Activity {
 					@Override
 					public void onClick(View v) {
 						CheckedTextView text = ((CheckedTextView) v);
-						IconEntity entity = (IconEntity) v.getTag();
-						entity.setSelected(text.isSelected());
 						text.toggle();
+						IconEntity entity = (IconEntity) v.getTag();
+						entity.setSelected(text.isChecked());
 					}
 				});
 				
@@ -211,12 +229,23 @@ public class MainActivity extends Activity {
 			
 			holder = (ViewHolder) view.getTag();
 			holder.text.setText(entity.getName());
+			holder.text.setChecked(entity.isSelected());
 			holder.text.setTag(entity);
 			holder.icon.setBackground(entity.getImage());
 			
 			return view;
 		}
-		
+
+		@Override
+		public int getCount() {
+			return mFragment.apps.size();
+		}
+
+		@Override
+		public IconEntity getItem(int position) {
+			return mFragment.apps.get(position);
+		}
+
 	}
 }
 

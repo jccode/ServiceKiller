@@ -18,4 +18,5 @@
         <item quantity="other">选中 %d 个</item>
     </plurals>
 
+    <string name="content_empty_list">没有数据.请先添加一些应用进来哦^^</string>
 </resources>
