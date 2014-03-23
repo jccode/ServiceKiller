@@ -2,6 +2,7 @@ package tk.jcchen.servicekiller;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 import tk.jcchen.servicekiller.ui.AppGridActivity;
@@ -17,6 +18,7 @@ import android.content.pm.PackageManager.NameNotFoundException;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.SparseBooleanArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -32,6 +34,7 @@ public class MainActivity extends Activity {
 	static final int REQUEST_APPS = 1;
 	private final List<String> defaultApps = Arrays.asList(
 			"com.tencent.mm", "com.eg.android.AlipayGphone", "com.tencent.mobileqq");
+	private ListView mListView;
 	private RetainedFragment mFragment;
 	private AppsArrayAdapter mAdapter;
 
@@ -39,7 +42,7 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		ListView listView = (ListView) findViewById(R.id.main);
+		mListView = (ListView) findViewById(R.id.main);
 		
 		FragmentManager fm = getFragmentManager();
 		mFragment = (RetainedFragment) fm.findFragmentByTag("work");
@@ -48,9 +51,10 @@ public class MainActivity extends Activity {
 			loadApps(defaultApps);
 			fm.beginTransaction().add(mFragment, "work").commit();
 		}
+		mListView.setEmptyView(findViewById(android.R.id.empty));
 		
 		mAdapter = new AppsArrayAdapter(this, mFragment.apps);
-		listView.setAdapter(mAdapter);
+		mListView.setAdapter(mAdapter);
 	}
 
 	@Override
@@ -79,6 +83,7 @@ public class MainActivity extends Activity {
 			break;
 			
 		case R.id.action_remove:
+			removeAppFromList();
 			break;
 			
 		case R.id.action_about:
@@ -103,7 +108,7 @@ public class MainActivity extends Activity {
 	
 	
 	void loadApps(List<String> packageNames) {
-		List<IconEntity> entities = new ArrayList<IconEntity>();
+		HashSet<IconEntity> entities = new HashSet<IconEntity>(mFragment.apps);
 		PackageManager pm = getPackageManager();
 		for(String packageName : packageNames) {
 			try {
@@ -117,13 +122,24 @@ public class MainActivity extends Activity {
 			}
 		}
 		
-		mFragment.apps = entities;
+		mFragment.apps = new ArrayList<IconEntity>(entities);
+		if(mAdapter != null) 
+			mAdapter.notifyDataSetChanged();
+	}
+	
+	private void removeAppFromList() {
+		for(IconEntity entity : mFragment.apps) {
+			if(entity.isSelected()) {
+				mFragment.apps.remove(entity);
+			}
+		}
+		mAdapter.notifyDataSetChanged();
 	}
 	
 	
 	public static class RetainedFragment extends Fragment {
 		
-		List<IconEntity> apps = null;
+		List<IconEntity> apps = new ArrayList<IconEntity>();
 		
 		@Override
 		public void onActivityCreated(Bundle savedInstanceState) {
