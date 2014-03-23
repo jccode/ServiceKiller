@@ -2,16 +2,21 @@ package tk.jcchen.servicekiller;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import tk.jcchen.servicekiller.ui.AppGridActivity;
 import tk.jcchen.servicekiller.ui.IconEntity;
 import tk.jcchen.servicekiller.ui.SettingsActivity;
+import tk.jcchen.servicekiller.util.ShellUtils;
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -31,8 +36,6 @@ public class MainActivity extends Activity {
 	
 	public static final String TAG = "ServiceKiller";
 	static final int REQUEST_APPS = 1;
-	private final List<String> defaultApps = Arrays.asList(
-			"com.tencent.mm", "com.eg.android.AlipayGphone", "com.tencent.mobileqq");
 	private ListView mListView;
 	private RetainedFragment mFragment;
 	private AppsArrayAdapter mAdapter;
@@ -47,7 +50,7 @@ public class MainActivity extends Activity {
 		mFragment = (RetainedFragment) fm.findFragmentByTag("work");
 		if(mFragment == null) {
 			mFragment = new RetainedFragment();
-			loadApps(defaultApps);
+			loadInitApps();
 			fm.beginTransaction().add(mFragment, "work").commit();
 		}
 		mListView.setEmptyView(findViewById(android.R.id.empty));
@@ -83,15 +86,13 @@ public class MainActivity extends Activity {
 			break;
 			
 		case R.id.action_kill:
+			killSelectedApps();
 			break;
 			
 		case R.id.action_remove:
 			removeAppFromList();
 			break;
 			
-		case R.id.action_about:
-			break;
-
 		default:
 			return super.onOptionsItemSelected(item);
 		}
@@ -104,13 +105,15 @@ public class MainActivity extends Activity {
 		if(requestCode == REQUEST_APPS) {
 			if(resultCode == RESULT_OK) {
 				ArrayList<String> result = data.getExtras().getStringArrayList("result");
-				loadApps(result);
+				loadAppsFromPackageName(result);
+				mAdapter.notifyDataSetChanged();
+				saveApps();
 			}
 		}
 	}
 	
 	
-	void loadApps(List<String> packageNames) {
+	void loadAppsFromPackageName(Collection<String> packageNames) {
 		HashSet<IconEntity> entities = new HashSet<IconEntity>(mFragment.apps);
 		PackageManager pm = getPackageManager();
 		for(String packageName : packageNames) {
@@ -126,9 +129,10 @@ public class MainActivity extends Activity {
 		}
 		
 		mFragment.apps = new ArrayList<IconEntity>(entities);
-		if(mAdapter != null) 
-			mAdapter.notifyDataSetChanged();
+			
 	}
+	
+	
 	
 	private void removeAppFromList() {
 		for(int i = mFragment.apps.size()-1; i >= 0; i--) {
@@ -154,6 +158,38 @@ public class MainActivity extends Activity {
 				return false;
 		}
 		return true;
+	}
+	
+	private void killSelectedApps() {
+		List<String> commands = new ArrayList<String>();
+		for(IconEntity entity : mFragment.apps) {
+			if(entity.isSelected()) {
+				commands.add("am force-stop " + entity.getPackageName());
+			}
+		}
+		
+		ShellUtils.execCommand(commands, true);
+	}
+	
+	private void loadInitApps() {
+		SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+		String[] initApps = getResources().getStringArray(R.array.init_apps);
+		Set<String> defaultApps = new HashSet<String>(Arrays.asList(initApps));
+		Set<String> apps = sharedPref.getStringSet("app_list", defaultApps);
+		loadAppsFromPackageName(apps);
+	}
+	
+	private void saveApps() {
+		SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+		SharedPreferences.Editor editor = sharedPref.edit();
+		
+		Set<String> apps = new HashSet<String>();
+		for(IconEntity entity : mFragment.apps) {
+			apps.add(entity.getPackageName());
+		}
+		
+		editor.putStringSet("app_list", apps);
+		editor.commit();
 	}
 	
 	

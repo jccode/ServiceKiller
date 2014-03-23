@@ -20,4 +20,11 @@
     </plurals>
 
     <string name="content_empty_list">No data. Please add some data first ^^</string>
+    
+    <string-array name="init_apps">
+        <item >com.tencent.mm</item>
+        <item >com.tencent.mobileqq</item>
+        <item >com.eg.android.AlipayGphone</item>
+    </string-array>
+    
 </resources>
